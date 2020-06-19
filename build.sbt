@@ -3,7 +3,7 @@ resolvers ++= Seq(
   "Sonatype Release" at "https://oss.sonatype.org/content/repositories/releases"
 )
 
-lazy val spark = (project in file("."))
+lazy val sparkApp = (project in file("."))
   .settings(
     name := "SimpleSparkJob",
     version := "1.0.0-SNAPSHOT",
