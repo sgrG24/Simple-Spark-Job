@@ -119,6 +119,9 @@ project/plugins/project/
 .cache
 .lib/
 
+.DS_Store
+.idea/
+
 ### Scala ###
 
 # End of https://www.gitignore.io/api/sbt,java,scala,intellij

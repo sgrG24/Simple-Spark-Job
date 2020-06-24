@@ -1,6 +1,4 @@
-
 import com.amazonaws.auth.{InstanceProfileCredentialsProvider, STSAssumeRoleSessionCredentialsProvider}
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.securitytoken.{AWSSecurityTokenService, AWSSecurityTokenServiceClientBuilder}
 import com.amazonaws.util.EC2MetadataUtils
@@ -88,7 +86,7 @@ object SparkJob {
         .mode(SaveMode.Overwrite)
         .save(output_path)
 
-    logger.info(String.format("Exiting %s application...."))
+    logger.info(String.format("Exiting application, byee...."))
 
   }
 
