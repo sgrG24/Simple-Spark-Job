@@ -13,7 +13,7 @@ lazy val sparkApp = (project in file("."))
       case x => MergeStrategy.first
     },
     libraryDependencies ++= Seq(scalatest, junit, sparkCore, sparkSql, scaldingArgs, awsSdk, awsSdkS3, awsSdkSTS,
-      slf4jApi)
+      hadoop_aws, hadoop_client,slf4jApi)
   )
 
 val sparkVersion = "2.4.4"
@@ -24,7 +24,7 @@ val scaldingArgs = "com.twitter" %% "scalding-args" % "0.17.3" % "compile"
 val sparkCore = "org.apache.spark" %% "spark-core" % sparkVersion % "provided"
 val sparkSql = "org.apache.spark"  %% "spark-sql" % sparkVersion % "provided"
 
-val awsSDKVersion = "1.11.749"
+val awsSDKVersion = "1.11.810"
 
 lazy val awsSdk     = "com.amazonaws" % "aws-java-sdk-core" % awsSDKVersion
 lazy val awsSdkS3   = "com.amazonaws" % "aws-java-sdk-s3" % awsSDKVersion
@@ -33,3 +33,7 @@ lazy val awsSdkSTS   = "com.amazonaws" % "aws-java-sdk-sts" % awsSDKVersion
 val slf4jVersion = "1.7.25"
 
 val slf4jApi         = "org.slf4j"                     % "slf4j-api"                      % slf4jVersion
+
+val hadoop_client = "org.apache.hadoop" % "hadoop-client" % "2.8.5"
+
+val hadoop_aws = "org.apache.hadoop" % "hadoop-aws" % "2.8.5"
