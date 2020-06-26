@@ -4,7 +4,6 @@ import com.amazonaws.services.securitytoken.{AWSSecurityTokenService, AWSSecurit
 import com.amazonaws.util.EC2MetadataUtils
 import com.twitter.scalding.Args
 import org.apache.hadoop.conf.Configuration
-import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.functions._
@@ -63,7 +62,6 @@ object SparkJob {
       .build()
 
     val configuration = new Configuration()
-    configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
     configureSecretKey(configuration, stsClient, roleArnRead, roleSessionName)
 
     logger.info("Fetching input data from S3 bucket");
