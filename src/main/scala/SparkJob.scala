@@ -1,5 +1,6 @@
 import com.amazonaws.auth.{InstanceProfileCredentialsProvider, STSAssumeRoleSessionCredentialsProvider}
 import com.amazonaws.regions.Regions
+import com.amazonaws.services.securitytoken.model.AssumeRoleRequest
 import com.amazonaws.services.securitytoken.{AWSSecurityTokenService, AWSSecurityTokenServiceClientBuilder}
 import com.amazonaws.util.EC2MetadataUtils
 import com.twitter.scalding.Args
@@ -25,18 +26,34 @@ object SparkJob {
                          roleARN: String,
                          roleSessionName: String
                         ) = {
-    val provider2 = new STSAssumeRoleSessionCredentialsProvider.Builder(
+    val provider = new STSAssumeRoleSessionCredentialsProvider.Builder(
       roleARN, roleSessionName).withStsClient(stsClient).build()
 
-    configuration.set("fs.s3a.access.key", provider2.getCredentials().getAWSAccessKeyId())
-    configuration.set("fs.s3a.secret.key", provider2.getCredentials().getAWSSecretKey())
-    configuration.set("fs.s3a.session.token", provider2.getCredentials().getSessionToken())
+    provider.getCredentials.getSessionToken
+    provider.getCredentials.getAWSSecretKey
+    provider.getCredentials.getAWSAccessKeyId
+    val request = new AssumeRoleRequest()
+    println(s"CURRENT ARN :: ${request.getRoleArn}")
+
+    request.setRoleArn(roleARN)
+    request.setRoleSessionName(roleSessionName)
+
+    println(s"ASSUMING ARN :: ${request.getRoleArn}")
+
+    val assumeRoleResult = stsClient.assumeRole(request)
+
+    println(s"ASSUMED USER :: ${assumeRoleResult.getAssumedRoleUser}")
+
+    println(s"ACCESS KEY: ${assumeRoleResult.getCredentials.getAccessKeyId}")
+    println(s"SECRET KEY: ${assumeRoleResult.getCredentials.getSecretAccessKey}")
+    println(s"SESSION TOKEN: ${assumeRoleResult.getCredentials.getSessionToken}")
+
+    configuration.set("fs.s3a.access.key", assumeRoleResult.getCredentials().getAccessKeyId())
+    configuration.set("fs.s3a.secret.key", assumeRoleResult.getCredentials().getSecretAccessKey())
+    configuration.set("fs.s3a.session.token", assumeRoleResult.getCredentials().getSessionToken())
   }
 
   def main(args: Array[String]): Unit = {
-
-    val logger = LoggerFactory.getLogger(this.getClass)
-
     val cmdArgs = Args(args)
     val input_path = cmdArgs("input_file")
     val output_path = cmdArgs("output_file")
@@ -45,13 +62,14 @@ object SparkJob {
 
     val clientRegion = Regions.US_EAST_1
 
-    logger.info(s"Input file: ${input_path}, Output file: ${output_path}")
 
     val sparkSession = SparkSession.builder()
       .appName("Spark Job")
       .getOrCreate()
 
-    logger.info("Loading STS Temporary credentials....")
+    println(s"Input file: ${input_path}, Output file: ${output_path}")
+
+    println("Loading STS Temporary credentials....")
     val roleSessionName: String = EC2MetadataUtils.getInstanceId() + "Session"
 
     val credentialsProvider = new InstanceProfileCredentialsProvider(true)
@@ -63,10 +81,11 @@ object SparkJob {
       .build()
 
     val configuration = new Configuration()
-    configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
+    //configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
+    println("Calling configure secret key")
     configureSecretKey(configuration, stsClient, roleArnRead, roleSessionName)
 
-    logger.info("Fetching input data from S3 bucket");
+    println("Fetching input data from S3 bucket");
     val schema = StructType(Array(
       StructField("Id", StringType),
       StructField("Item", StringType)
@@ -80,13 +99,13 @@ object SparkJob {
     val outputDF = new SparkJob().solve(inputDF)
 
     configureSecretKey(configuration, stsClient, roleArnWrite, roleSessionName)
-    logger.trace("Storing output data back to S3 bucket")
+    println("Storing output data back to S3 bucket")
     outputDF.write
         .format("csv")
         .mode(SaveMode.Overwrite)
         .save(output_path)
 
-    logger.info(String.format("Exiting application, byee...."))
+    println(String.format("Exiting application, byee...."))
 
   }
 
