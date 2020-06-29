@@ -1,6 +1,6 @@
 import com.amazonaws.auth.{InstanceProfileCredentialsProvider, STSAssumeRoleSessionCredentialsProvider}
 import com.amazonaws.regions.Regions
-import com.amazonaws.services.securitytoken.model.AssumeRoleRequest
+import com.amazonaws.services.securitytoken.model.{AssumeRoleRequest, GetCallerIdentityRequest}
 import com.amazonaws.services.securitytoken.{AWSSecurityTokenService, AWSSecurityTokenServiceClientBuilder}
 import com.amazonaws.util.EC2MetadataUtils
 import com.twitter.scalding.Args
@@ -40,6 +40,8 @@ object SparkJob {
 
     println(s"ASSUMING ARN :: ${request.getRoleArn}")
 
+    println(s"Caller Identity for assuming Role: ${stsClient.getCallerIdentity(new GetCallerIdentityRequest)}")
+
     val assumeRoleResult = stsClient.assumeRole(request)
 
     println(s"ASSUMED USER :: ${assumeRoleResult.getAssumedRoleUser}")
@@ -47,6 +49,7 @@ object SparkJob {
     println(s"ACCESS KEY: ${assumeRoleResult.getCredentials.getAccessKeyId}")
     println(s"SECRET KEY: ${assumeRoleResult.getCredentials.getSecretAccessKey}")
     println(s"SESSION TOKEN: ${assumeRoleResult.getCredentials.getSessionToken}")
+
 
     configuration.set("fs.s3a.access.key", assumeRoleResult.getCredentials().getAccessKeyId())
     configuration.set("fs.s3a.secret.key", assumeRoleResult.getCredentials().getSecretAccessKey())
@@ -86,6 +89,9 @@ object SparkJob {
     configureSecretKey(configuration, stsClient, roleArnRead, roleSessionName)
 
     println("Fetching input data from S3 bucket");
+    val callerIdentity = stsClient.getCallerIdentity(new GetCallerIdentityRequest)
+    println(s"Caller Identity: ${callerIdentity}")
+    println(s"Caller Identity ARN: ${callerIdentity.getArn}")
     val schema = StructType(Array(
       StructField("Id", StringType),
       StructField("Item", StringType)
