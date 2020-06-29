@@ -40,7 +40,7 @@ object SparkJob {
 
     println(s"ASSUMING ARN :: ${request.getRoleArn}")
 
-    println(s"Caller Identity for assuming Role: ${stsClient.getCallerIdentity(new GetCallerIdentityRequest)}")
+    println(s"Caller Identity Before assuming Role: ${stsClient.getCallerIdentity(new GetCallerIdentityRequest)}")
 
     val assumeRoleResult = stsClient.assumeRole(request)
 
@@ -51,9 +51,29 @@ object SparkJob {
     println(s"SESSION TOKEN: ${assumeRoleResult.getCredentials.getSessionToken}")
 
 
+
     configuration.set("fs.s3a.access.key", assumeRoleResult.getCredentials().getAccessKeyId())
     configuration.set("fs.s3a.secret.key", assumeRoleResult.getCredentials().getSecretAccessKey())
     configuration.set("fs.s3a.session.token", assumeRoleResult.getCredentials().getSessionToken())
+
+    configuration.set("fs.s3.awsAccessKeyId", assumeRoleResult.getCredentials().getAccessKeyId())
+    configuration.set("fs.s3.awsSecretAccessKey", assumeRoleResult.getCredentials().getSecretAccessKey())
+
+    configuration.set("fs.s3n.awsAccessKeyId", assumeRoleResult.getCredentials().getAccessKeyId())
+    configuration.set("fs.s3n.awsSecretAccessKey", assumeRoleResult.getCredentials().getSecretAccessKey())
+
+    val temp_access_key = configuration.get("fs.s3a.access.key")
+    val temp_secret_key = configuration.get("fs.s3a.secret.key")
+    val temp_session_token = configuration.get("fs.s3a.session.token")
+
+    println("HADOOP CONFIGS AFTER ASSUMING ROLE")
+    println(s"fs.s3a.access.key ${temp_access_key}")
+    println(s"fs.s3a.secret.key ${temp_secret_key}")
+    println(s"fs.s3a.session.token ${temp_session_token}")
+
+    println(s"Caller Identity After assuming Role: ${stsClient.getCallerIdentity(new GetCallerIdentityRequest)}")
+
+
   }
 
   def main(args: Array[String]): Unit = {
@@ -83,8 +103,18 @@ object SparkJob {
       .withRegion(clientRegion)
       .build()
 
-    val configuration = new Configuration()
+    val configuration = sparkSession.sparkContext.hadoopConfiguration
     //configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
+
+    val temp_access_key = configuration.get("fs.s3a.access.key")
+    val temp_secret_key = configuration.get("fs.s3a.secret.key")
+    val temp_session_token = configuration.get("fs.s3a.session.token")
+
+    println("HADOOP CONFIGS BEFORE ASSUMING ROLE")
+    println(s"fs.s3a.access.key ${temp_access_key}")
+    println(s"fs.s3a.secret.key ${temp_secret_key}")
+    println(s"fs.s3a.session.token ${temp_session_token}")
+
     println("Calling configure secret key")
     configureSecretKey(configuration, stsClient, roleArnRead, roleSessionName)
 
@@ -96,6 +126,8 @@ object SparkJob {
       StructField("Id", StringType),
       StructField("Item", StringType)
     ))
+
+
 
     val inputDF = sparkSession.read
       .schema(schema)
