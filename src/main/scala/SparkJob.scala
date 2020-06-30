@@ -55,14 +55,6 @@ object SparkJob {
     configuration.set("fs.s3a.secret.key", assumeRoleResult.getCredentials().getSecretAccessKey())
     configuration.set("fs.s3a.session.token", assumeRoleResult.getCredentials().getSessionToken())
 
-    configuration.set("fs.s3.awsAccessKeyId", assumeRoleResult.getCredentials().getAccessKeyId())
-    configuration.set("fs.s3.awsSecretAccessKey", assumeRoleResult.getCredentials().getSecretAccessKey())
-    configuration.set("fs.s3.awsSessionToken", assumeRoleResult.getCredentials().getSessionToken)
-
-    configuration.set("fs.s3n.awsAccessKeyId", assumeRoleResult.getCredentials().getAccessKeyId())
-    configuration.set("fs.s3n.awsSecretAccessKey", assumeRoleResult.getCredentials().getSecretAccessKey())
-    configuration.set("fs.s3n.awsSessionToken", assumeRoleResult.getCredentials().getSessionToken)
-
     println(s"Caller Identity After assuming Role: ${stsClient.getCallerIdentity(new GetCallerIdentityRequest)}")
   }
 
@@ -94,6 +86,7 @@ object SparkJob {
       .build()
 
     val configuration = sparkSession.sparkContext.hadoopConfiguration
+    //Important setting: Without this, codes failed.
     configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
 
     println("Calling configure secret key")
@@ -114,7 +107,6 @@ object SparkJob {
       .csv(input_path)
     val outputDF = new SparkJob().solve(inputDF)
 
-    configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
     configureSecretKey(configuration, stsClient, roleArnWrite, roleSessionName)
     println("Storing output data back to S3 bucket")
     outputDF.write

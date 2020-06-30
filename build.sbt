@@ -26,8 +26,6 @@ val sparkSql = "org.apache.spark"  %% "spark-sql" % sparkVersion % "provided"
 
 val awsSDKVersion = "1.11.749"
 
-lazy val awsSdk     = "com.amazonaws" % "aws-java-sdk-core" % awsSDKVersion
-lazy val awsSdkS3   = "com.amazonaws" % "aws-java-sdk-s3" % awsSDKVersion
 lazy val awsSdkSTS   = "com.amazonaws" % "aws-java-sdk-sts" % awsSDKVersion
 
 val slf4jVersion = "1.7.25"
