@@ -5,15 +5,14 @@ import com.amazonaws.services.securitytoken.{AWSSecurityTokenService, AWSSecurit
 import com.amazonaws.util.EC2MetadataUtils
 import com.twitter.scalding.Args
 import org.apache.hadoop.conf.Configuration
-import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.functions._
-import org.slf4j.LoggerFactory
 
 class SparkJob{
   def solve(inputDF:DataFrame) = {
     val outputDF = inputDF.where(col("Id") === "2")
+    println(s"Number Of Objects: ${outputDF.count()}")
     outputDF
   }
 }
@@ -58,22 +57,13 @@ object SparkJob {
 
     configuration.set("fs.s3.awsAccessKeyId", assumeRoleResult.getCredentials().getAccessKeyId())
     configuration.set("fs.s3.awsSecretAccessKey", assumeRoleResult.getCredentials().getSecretAccessKey())
+    configuration.set("fs.s3.awsSessionToken", assumeRoleResult.getCredentials().getSessionToken)
 
     configuration.set("fs.s3n.awsAccessKeyId", assumeRoleResult.getCredentials().getAccessKeyId())
     configuration.set("fs.s3n.awsSecretAccessKey", assumeRoleResult.getCredentials().getSecretAccessKey())
-
-    val temp_access_key = configuration.get("fs.s3a.access.key")
-    val temp_secret_key = configuration.get("fs.s3a.secret.key")
-    val temp_session_token = configuration.get("fs.s3a.session.token")
-
-    println("HADOOP CONFIGS AFTER ASSUMING ROLE")
-    println(s"fs.s3a.access.key ${temp_access_key}")
-    println(s"fs.s3a.secret.key ${temp_secret_key}")
-    println(s"fs.s3a.session.token ${temp_session_token}")
+    configuration.set("fs.s3n.awsSessionToken", assumeRoleResult.getCredentials().getSessionToken)
 
     println(s"Caller Identity After assuming Role: ${stsClient.getCallerIdentity(new GetCallerIdentityRequest)}")
-
-
   }
 
   def main(args: Array[String]): Unit = {
@@ -104,24 +94,12 @@ object SparkJob {
       .build()
 
     val configuration = sparkSession.sparkContext.hadoopConfiguration
-    //configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
-
-    val temp_access_key = configuration.get("fs.s3a.access.key")
-    val temp_secret_key = configuration.get("fs.s3a.secret.key")
-    val temp_session_token = configuration.get("fs.s3a.session.token")
-
-    println("HADOOP CONFIGS BEFORE ASSUMING ROLE")
-    println(s"fs.s3a.access.key ${temp_access_key}")
-    println(s"fs.s3a.secret.key ${temp_secret_key}")
-    println(s"fs.s3a.session.token ${temp_session_token}")
+    configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
 
     println("Calling configure secret key")
     configureSecretKey(configuration, stsClient, roleArnRead, roleSessionName)
 
     println("Fetching input data from S3 bucket");
-    val callerIdentity = stsClient.getCallerIdentity(new GetCallerIdentityRequest)
-    println(s"Caller Identity: ${callerIdentity}")
-    println(s"Caller Identity ARN: ${callerIdentity.getArn}")
     val schema = StructType(Array(
       StructField("Id", StringType),
       StructField("Item", StringType)
@@ -136,6 +114,7 @@ object SparkJob {
       .csv(input_path)
     val outputDF = new SparkJob().solve(inputDF)
 
+    configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
     configureSecretKey(configuration, stsClient, roleArnWrite, roleSessionName)
     println("Storing output data back to S3 bucket")
     outputDF.write
