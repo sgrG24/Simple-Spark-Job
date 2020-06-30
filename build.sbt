@@ -12,7 +12,7 @@ lazy val sparkApp = (project in file("."))
       case PathList("META-INF", xs @ _*) => MergeStrategy.discard
       case x => MergeStrategy.first
     },
-    libraryDependencies ++= Seq(scalatest, junit, sparkCore, sparkSql, scaldingArgs, awsSdk, awsSdkS3, awsSdkSTS,
+    libraryDependencies ++= Seq(scalatest, junit, sparkCore, sparkSql, scaldingArgs, hadoop_aws, awsSdkSTS,
       slf4jApi)
   )
 
@@ -33,3 +33,5 @@ lazy val awsSdkSTS   = "com.amazonaws" % "aws-java-sdk-sts" % awsSDKVersion
 val slf4jVersion = "1.7.25"
 
 val slf4jApi         = "org.slf4j"                     % "slf4j-api"                      % slf4jVersion
+
+val hadoop_aws = "org.apache.hadoop" % "hadoop-aws" % "2.8.5"
