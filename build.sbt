@@ -13,7 +13,7 @@ lazy val sparkApp = (project in file("."))
       case x => MergeStrategy.first
     },
     libraryDependencies ++= Seq(scalatest, junit, sparkCore, sparkSql, scaldingArgs, hadoop_aws, awsSdkSTS,
-      slf4jApi)
+      slf4jApi, spray_json)
   )
 
 val sparkVersion = "2.4.4"
@@ -32,4 +32,6 @@ val slf4jVersion = "1.7.25"
 
 val slf4jApi         = "org.slf4j"                     % "slf4j-api"                      % slf4jVersion
 
-val hadoop_aws = "org.apache.hadoop" % "hadoop-aws" % "2.8.5"
+val hadoop_aws = "org.apache.hadoop" % "hadoop-aws" % "2.6.0"
+
+val spray_json = "io.spray" %%  "spray-json" % "1.3.5"
