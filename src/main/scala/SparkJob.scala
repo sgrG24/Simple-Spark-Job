@@ -32,7 +32,7 @@ object SparkJob {
   }
 
   def setInstanceCredentialProvider(configuration: Configuration) = {
-    configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SharedInstanceProfileCredentialsProvider")
+    configuration.set("fs.s3a.aws.credentials.provider", "com.amazonaws.auth.InstanceProfileCredentialsProvider")
   }
 
   def main(args: Array[String]): Unit = {
