@@ -26,30 +26,13 @@ object SparkJob {
                     roleSessionName: String
                         ) = {
     println("CALLING Assuming Role")
-    val request = new AssumeRoleRequest()
-    println(s"CURRENT ARN :: ${request.getRoleArn}")
 
-    request.setRoleArn(roleARN)
-    request.setRoleSessionName(roleSessionName)
-
-    println(s"ASSUMING ARN :: ${request.getRoleArn}")
-
-    val assumeRoleResult = stsClient.assumeRole(request)
-
-    println(s"ASSUMED USER :: ${assumeRoleResult.getAssumedRoleUser}")
-
-    println(s"ACCESS KEY: ${assumeRoleResult.getCredentials.getAccessKeyId}")
-    println(s"SECRET KEY: ${assumeRoleResult.getCredentials.getSecretAccessKey}")
-    println(s"SESSION TOKEN: ${assumeRoleResult.getCredentials.getSessionToken}")
-
-    configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
-    configuration.set("fs.s3a.access.key", assumeRoleResult.getCredentials().getAccessKeyId())
-    configuration.set("fs.s3a.secret.key", assumeRoleResult.getCredentials().getSecretAccessKey())
-    configuration.set("fs.s3a.session.token", assumeRoleResult.getCredentials().getSessionToken())
+    configuration.set("fs.s3a.aws.credentials.provider", "CustomCredentialProvider")
+    configuration.set("fs.s3a.assumed.role.arn", roleARN)
   }
 
   def setInstanceCredentialProvider(configuration: Configuration) = {
-    configuration.set("fs.s3a.aws.credentials.provider", "com.amazonaws.auth.InstanceProfileCredentialsProvider")
+    configuration.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SharedInstanceProfileCredentialsProvider")
   }
 
   def main(args: Array[String]): Unit = {
@@ -79,7 +62,10 @@ object SparkJob {
     val configuration = sparkSession.sparkContext.hadoopConfiguration
     //Important setting: Without this, codes failed.
 
+    println("Printing Hadoop Configs before assuming read role: " + configuration)
     if(roleArnRead != "None") assumeIamRole(configuration, stsClient, roleArnRead, roleSessionName)
+    println("Printing Hadoop Configs after assuming read role: " + configuration.toString)
+
 
     println("Fetching input data from S3 bucket");
     val schema = StructType(Array(
@@ -95,7 +81,9 @@ object SparkJob {
     val outputDF = new SparkJob().solve(inputDF)
 
     setInstanceCredentialProvider(configuration)
+    println("Printing Hadoop Configs before assuming write role: " + configuration.toString)
     if(roleArnWrite != "None") assumeIamRole(configuration, stsClient, roleArnWrite, roleSessionName)
+    println("Printing Hadoop Configs after assuming write role: " + configuration.toString)
 
     println("Storing output data back to S3 bucket")
     outputDF.write
