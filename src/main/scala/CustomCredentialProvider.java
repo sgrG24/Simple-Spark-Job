@@ -5,6 +5,7 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder
 import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.Credentials;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -31,6 +32,9 @@ public class CustomCredentialProvider implements AWSCredentialsProvider, Closeab
     private Date sessionCredentialsExpiration;
 
 
+    public CustomCredentialProvider(Configuration conf) throws IOException {
+        this((URI)null, conf);
+    }
 
 
     public CustomCredentialProvider(URI uri, Configuration conf) throws IOException {
